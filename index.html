@@ -227,7 +227,9 @@
   <div class="row" style="margin-top: 12px;"><label>Lead investor stake</label><span class="val" id="leadStake">0%</span></div>
   <div class="row"><label>Lead check size</label><span class="val" id="leadCheck">$0</span></div>
   <div class="row"><label>Other investors stake</label><span class="val" id="otherStake">0%</span></div>
-  <div class="row" style="border-top: 1px solid #eee; padding-top: 12px; margin-top: 6px;"><label>Implied price per share (vs raise) effective valuation</label><span class="val" id="impliedVal">$0</span></div>
+  <div class="row" style="border-top: 1px solid #eee; padding-top: 12px; margin-top: 6px;"><label><strong>Pre-money valuation (cap − raise)</strong></label><span class="val big" id="preMoneyVal">$0</span></div>
+  <div class="row"><label>Effective post-money cap</label><span class="val big" id="postCapVal">$0</span></div>
+  <div class="row"><label>Implied $ / 1% ownership</label><span class="val" id="pricePerPct">$0</span></div>
 </div>
 
 <div class="panel" style="margin-top: 16px; background: #fff8e1;">
@@ -239,7 +241,7 @@
 </div>
 
 <div class="footer">
-  Live: USD/ILS as of 2026-05-27 ≈ 2.85. Salaries are gross NIS/mo. Employer load includes pension (8.33%), severance (8.33%), social security (~7%), other (~8%). Tweak as needed.
+  Live: USD/ILS as of 2026-05-27 ≈ 2.85. Salaries are gross NIS/mo. Employer load includes pension (8.33%), severance (8.33%), social security (~7%), other (~8%). Inputs are saved to your browser locally. <a href="#" onclick="resetState(); return false;" style="color:#1a73e8;">Reset to defaults</a>.
 </div>
 
 <script>
@@ -353,12 +355,46 @@ function compute() {
   document.getElementById('leadStake').textContent = (leadStake*100).toFixed(1) + '%';
   document.getElementById('leadCheck').textContent = fmt(leadCheck);
   document.getElementById('otherStake').textContent = (otherStake*100).toFixed(1) + '%';
-  document.getElementById('impliedVal').textContent = fmt(postMoney - raiseAmt) + ' pre-money';
+  document.getElementById('preMoneyVal').textContent = fmt(postMoney - raiseAmt);
+  document.getElementById('postCapVal').textContent = fmt(postMoney);
+  document.getElementById('pricePerPct').textContent = fmt(postMoney / 100);
+
+  saveState();
+}
+
+const STORAGE_KEY = 'domino-calc-v1';
+
+function saveState() {
+  const state = {};
+  document.querySelectorAll('input').forEach(el => { state[el.id] = el.value; });
+  state.__raiseTouched = document.getElementById('raiseOverride').dataset.touched || '';
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+function restoreState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    Object.keys(state).forEach(id => {
+      if (id === '__raiseTouched') return;
+      const el = document.getElementById(id);
+      if (el) el.value = state[id];
+    });
+    if (state.__raiseTouched) document.getElementById('raiseOverride').dataset.touched = state.__raiseTouched;
+  } catch (e) {}
+}
+
+function resetState() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  location.reload();
 }
 
 document.getElementById('raiseOverride').addEventListener('input', function() { this.dataset.touched = '1'; });
 
 document.querySelectorAll('input').forEach(el => el.addEventListener('input', compute));
+
+restoreState();
 compute();
 </script>
 
